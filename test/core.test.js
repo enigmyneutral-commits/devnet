@@ -8,7 +8,7 @@ function setup() {
   registry.registerNode({ id: "node-b", ownerId: "owner-a", endpoint: "https://node-b.example.invalid" });
   const health = new HealthMonitor(registry, { failureThreshold: 2, degradedAfterMs: 1000, offlineAfterMs: 3000 });
   health.heartbeat("node-a", 100_000);
-  health.heartbeat("node-b", 100_000);
+  health.heartbeat("node-b", 103_500);
   return { registry, health };
 }
 
@@ -18,10 +18,11 @@ test("parses canonical URI and logical hostname", () => {
   assert.equal(parseDevnetAddress("devnet://api.shop/v1").path, "/v1");
 });
 
-test("rejects credentials, ports and traversal", () => {
+test("rejects credentials, ports and literal or encoded traversal", () => {
   assert.throws(() => parseDevnetAddress("devnet://user:pass@api.shop"), /Credentials/);
   assert.throws(() => parseDevnetAddress("api.shop:8080"), /hostname/);
   assert.throws(() => parseDevnetAddress("devnet://api.shop/../admin"), /traversal/);
+  assert.throws(() => parseDevnetAddress("devnet://api.shop/%2e%2e/admin"), /traversal/);
 });
 
 test("requires HTTPS endpoints and registered nodes", () => {
