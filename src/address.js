@@ -8,6 +8,16 @@ export function parseDevnetAddress(input) {
   let pathname = "/";
 
   if (value.startsWith("devnet://")) {
+    const rawAuthorityAndPath = value.slice("devnet://".length).split(/[?#]/, 1)[0];
+    const rawPathIndex = rawAuthorityAndPath.indexOf("/");
+    if (rawPathIndex >= 0) {
+      const rawPath = rawAuthorityAndPath.slice(rawPathIndex);
+      let segments;
+      try { segments = rawPath.split("/").map(segment => decodeURIComponent(segment)); }
+      catch { throw new TypeError("Malformed path encoding"); }
+      if (segments.some(part => part === "." || part === "..")) throw new TypeError("Path traversal segments are not allowed");
+    }
+
     let parsed;
     try { parsed = new URL(value); } catch { throw new TypeError("Invalid DEVNET URI"); }
     if (parsed.protocol !== "devnet:") throw new TypeError("Unsupported protocol");
@@ -28,7 +38,6 @@ export function parseDevnetAddress(input) {
   if (labels.length < 1 || labels.length > 8 || labels.some(label => !LABEL.test(label))) {
     throw new TypeError("Invalid DEVNET name: use lowercase letters, digits and internal hyphens");
   }
-  if (pathname.split("/").some(part => part === "." || part === "..")) throw new TypeError("Path traversal segments are not allowed");
 
   return Object.freeze({
     scheme: "devnet",
