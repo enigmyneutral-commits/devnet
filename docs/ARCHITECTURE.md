@@ -1,57 +1,53 @@
-# DEEVO DEVNET — Arquitetura inicial
+# DEEVO DEVNET — Arquitetura do MVP
 
-## Objetivo
+## Missão
 
-Investigar e prototipar uma rede sobreposta orientada ao desenvolvimento de software. A primeira versão deve provar comunicação autenticada entre nós e descoberta de serviços antes de introduzir recursos complexos.
+A DEVNET é uma rede sobreposta de endereçamento e comunicação para desenvolvimento. Não hospeda os projetos: cada proprietário mantém a aplicação, a base de dados, as credenciais e a política de réplica. O nó usa um conector de saída, como Cloudflare Tunnel, para expor apenas serviços explicitamente autorizados sem abrir portas de entrada na rede doméstica.
 
-## Componentes
+## Camadas
 
-### 1. DEVNET Core
-Responsável pelo ciclo de vida do nó, identidade criptográfica, sessões autenticadas e transporte de mensagens.
+1. **DEVNET Client** — recebe endereços `devnet://...`, aplica identidade do utilizador e pede resolução; não executa conteúdo remoto automaticamente.
+2. **DEVNET Protocol** — envelopes versionados, tipos de mensagem permitidos, assinatura Ed25519, timestamps e nonces.
+3. **Node Agent** — executa no computador do proprietário, mantém identidade local e anuncia apenas serviços aprovados. A chave privada não deve sair do nó.
+4. **Connectivity Adapter** — integração futura com Cloudflare Tunnel; configura e verifica conectividade, sem armazenar tokens em código ou no repositório.
+5. **Resolver / Registry** — valida registos assinados e devolve endpoints elegíveis. A implementação atual do registry é apenas em memória e não é distribuída.
+6. **Health & Route Manager** — monitoriza heartbeat e escolhe endpoints saudáveis apenas dentro do grupo de réplicas declarado pelo proprietário.
+7. **Owner Application** — serviço e banco de dados continuam sob controlo do desenvolvedor.
 
-### 2. Service Discovery
-Resolve identificadores de serviços para registros assinados e informações de conexão. A arquitetura deve evitar dependência obrigatória de um único diretório central, sem excluir mecanismos de bootstrap.
+## Fluxo de acesso pretendido
 
-### 3. Developer Services
-Serviços modulares, como documentação, repositórios, agentes de IA, ambientes de execução e marketplace. Cada serviço declara capacidades e permissões.
+1. O utilizador introduz `devnet://api.projeto` no cliente.
+2. O cliente autentica o utilizador e consulta um resolver autorizado.
+3. O resolver devolve um registo assinado e ainda válido.
+4. O cliente verifica a assinatura, identidade, autorização e validade.
+5. O conector encaminha para o endpoint aprovado pelo proprietário.
+6. Em falha, o gestor escolhe uma réplica saudável do mesmo grupo, se existir.
+7. Se não existir réplica, devolve indisponibilidade; não simula sucesso.
 
-### 4. DEEVO Browser
-Cliente de interface para navegar na web convencional e nos serviços DEVNET. Um esquema como `devnet://` é conceitual até que exista um cliente que o registre e implemente sua resolução.
+## Decisões do protótipo
 
-### 5. Segurança e governança
-Gestão de versões de protocolo, revogação de identidades, atualização segura, limites de recursos, auditoria e resposta a incidentes.
+- Runtime: Node.js 20+; JavaScript ESM e APIs criptográficas nativas.
+- Identidade: Ed25519; ID derivado do SHA-256 da chave pública SPKI.
+- Endereçamento: nomes lógicos e esquema `devnet://`; parser local, não DNS global.
+- Assinatura: JSON canónico por ordenação recursiva de chaves.
+- Mensagens: protocolo `devnet`, versão 1, tipos permitidos, timestamp, nonce e assinatura.
+- Registos de serviço: assinados e com expiração.
+- Failover: apenas endpoints online dentro de um grupo de réplicas comum.
+- Dependências de runtime: nenhuma dependência externa para o núcleo atual.
 
-## Fluxo conceitual
+## Limites conhecidos
 
-1. O cliente recebe um endereço DEVNET.
-2. O resolvedor procura um registro válido do serviço.
-3. A identidade do serviço é verificada.
-4. O cliente estabelece um canal autenticado e protegido.
-5. A autorização é validada antes de acessar recursos.
-6. O cliente apresenta o resultado ao usuário e registra apenas os eventos operacionais necessários.
+- Ainda não há canal de transporte de nó a nó nem handshake de sessão.
+- O ReplayGuard é local ao processo e não substitui armazenamento distribuído anti-replay.
+- O registry não persiste, não faz consenso e não é resistente a reinícios.
+- A assinatura prova posse da chave, não prova que o proprietário está autorizado a publicar um nome; essa política precisa de uma camada de enrollment/ACL.
+- A assinatura de um registo não prova que o endpoint está operacional.
+- O esquema `devnet://` não funciona em navegadores comuns sem cliente ou integração.
+- A redundância do Tunnel não substitui réplicas da aplicação nem replicação consistente da base de dados.
 
-## Requisitos não funcionais
+## Fora do escopo do MVP
 
-- Segurança por padrão; não executar código remoto automaticamente.
-- Limites explícitos de CPU, memória, armazenamento e tempo para serviços.
-- Timeouts, retries limitados e cancelamento.
-- Compatibilidade versionada entre clientes e nós.
-- Observabilidade configurável e minimização de metadados.
-- Testes de integração, falhas de rede e comportamento malicioso.
-- Documentação de instalação, atualização e recuperação.
-
-## Fora do escopo do primeiro protótipo
-
-- Criar uma infraestrutura física global.
-- Garantir anonimato absoluto.
-- Executar código arbitrário de terceiros sem isolamento.
-- Prometer disponibilidade sem redundância e operação distribuída.
-
-## Decisões pendentes
-
-- Linguagem e runtime do núcleo.
-- Transporte e biblioteca P2P.
-- Formato de identidade e registros assinados.
-- Estratégia de bootstrap e descoberta.
-- Modelo de confiança e revogação.
-- Licença e governança do projeto.
+- DNS público, novo TLD reconhecido pela raiz global ou nova infraestrutura física de Internet.
+- Hospedagem central de aplicações.
+- Proxy aberto, encaminhamento para URLs arbitrários ou execução automática de código remoto.
+- Garantia de anonimato, disponibilidade absoluta ou tolerância a qualquer falha.
