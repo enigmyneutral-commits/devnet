@@ -2,13 +2,13 @@
   "name": "@devnet/core",
   "version": "0.1.0",
   "private": true,
-  "description": "Protocol-neutral core for DEVNET addressing, node health and authorized failover.",
+  "description": "Experimental DEVNET addressing, signed identity, node health and authorized failover core.",
   "type": "module",
   "engines": { "node": ">=20" },
   "scripts": {
     "test": "node --test",
     "test:watch": "node --test --watch",
     "demo": "node examples/failover-demo.js",
-    "check": "node --check src/address.js && node --check src/registry.js && node --check src/health-monitor.js && node --check src/route-manager.js"
+    "check": "node --check src/address.js && node --check src/registry.js && node --check src/health-monitor.js && node --check src/route-manager.js && node --check src/identity.js && node --check src/protocol.js && node --check test/core.test.js && node --check test/identity-protocol.test.js"
   }
 }
