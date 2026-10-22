@@ -2,6 +2,7 @@
 export class RouteManager {
   constructor(registry, { maxCandidates = 8 } = {}) {
     if (!registry) throw new TypeError("registry is required");
+    if (!Number.isInteger(maxCandidates) || maxCandidates < 1) throw new TypeError("maxCandidates must be positive");
     this.registry = registry;
     this.maxCandidates = maxCandidates;
   }
@@ -17,6 +18,12 @@ export class RouteManager {
       return true;
     });
     candidates.sort((a, b) => a.priority - b.priority || a.nodeId.localeCompare(b.nodeId));
+
+    // Never fail over between unrelated registrations that happen to share a name.
+    const preferredGroup = candidates[0]?.replicaGroup ?? null;
+    if (preferredGroup) candidates = candidates.filter(candidate => candidate.replicaGroup === preferredGroup);
+    else candidates = candidates.slice(0, 1);
+
     const selected = candidates.slice(0, this.maxCandidates);
     return {
       address: result.address.canonical,
@@ -26,7 +33,7 @@ export class RouteManager {
       failoverPossible: selected.length > 1,
       note: selected.length === 0
         ? "No healthy, authorized endpoint is available. A relay alone cannot replace an offline application."
-        : "Only owner-registered endpoints are eligible for routing.",
+        : "Only healthy endpoints in the selected owner-registered replica group are eligible for failover.",
     };
   }
 }
