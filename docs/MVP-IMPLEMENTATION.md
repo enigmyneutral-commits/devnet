@@ -1,45 +1,50 @@
 # DEVNET Core MVP
 
-## Goal
+## Objetivo
 
-Implement the first testable protocol core: internal address parsing, node/service registration, health state and failover planning between owner-registered replicas.
+Construir e testar a base local do protocolo de endereçamento, identidade, registos assinados, mensagens versionadas, saúde dos nós e planeamento de failover.
 
-## Architecture boundary
+## Requisitos
 
-DEVNET is an addressing and communication overlay for development. It does not host or copy a developer's application. The developer owns the origin, application, database, credentials and replica policy. Cloudflare Tunnel can connect a local origin using outbound-only connections without opening inbound ports. See the [official Tunnel documentation](https://developers.cloudflare.com/tunnel/).
+- Node.js 20 ou superior.
+- Nenhuma dependência externa de runtime no núcleo atual.
+- Testes executados com `node:test`.
 
-## Current implementation
+## Componentes implementados
 
-- Address parser for `devnet://service.project` and logical `service.project.devnet` names.
-- In-memory registry for nodes and owner-registered service endpoints.
-- Health monitor for heartbeats, consecutive failures and stale-node evaluation.
-- Route manager that selects healthy registered endpoints by priority.
-- Built-in Node.js test suite for parsing, validation, health and failover.
+- `parseDevnetAddress`: parser para nomes lógicos e URIs `devnet://`.
+- `createNodeIdentity`: identidade Ed25519 e fingerprint da chave pública.
+- `signPayload` / `verifyPayload`: assinatura de payload JSON canónico.
+- `createSignedServiceRecord` / `verifySignedServiceRecord`: registos assinados com expiração.
+- `createEnvelope` / `verifyEnvelope`: envelope DEVNET v1, tipos permitidos, timestamp, nonce e assinatura.
+- `ReplayGuard`: cache anti-replay em memória limitada.
+- `NodeRegistry`: registo em memória de nós e serviços.
+- `HealthMonitor`: estados online, degradado e offline por heartbeat.
+- `RouteManager`: planeamento de failover entre endpoints saudáveis no mesmo grupo de réplicas.
 
-## Critical semantics
-
-1. A healthy alternate route can repair a failed network path only if it reaches the same live service.
-2. If an origin node is offline, a relay cannot magically serve the application. The owner must register a compatible replica and manage data consistency.
-3. Failover candidates are limited to explicitly registered endpoints. The MVP does not forward to arbitrary URLs, scan networks, or operate as an open proxy.
-4. Node registration and heartbeat methods are library APIs only. They are not an authenticated public API yet.
-5. The registry is in-memory and resets on process restart. It is not suitable for production or multi-region consensus.
-6. This implementation parses DEVNET names inside application code. It does not alter public DNS or make an unmodified browser resolve custom names globally.
-
-## Run tests
-
-Requires Node.js 20 or later.
+## Executar
 
 ~~~bash
-npm test
 npm run check
+npm test
+npm run demo
 ~~~
 
-## Next engineering stages
+## Semântica de falha
 
-1. Signed node identity and enrollment.
-2. Authenticated control-plane API and persistent registry.
-3. Cloudflare Tunnel adapter and per-owner configuration validation.
-4. Resolver protocol and browser/client integration.
-5. Multi-node discovery, failure detection tuning and split-brain protection.
-6. Replication contract, opt-in health checks and end-to-end integration tests.
-7. Security review before production use.
+Uma rota alternativa só recupera a ligação se apontar para uma aplicação real e compatível. Um relay não substitui uma aplicação desligada. Réplicas de aplicação e consistência de dados são responsabilidade do proprietário.
+
+## Limites atuais
+
+- O protocolo ainda não tem transporte de rede nem handshake autenticado.
+- Não há API pública, resolver distribuído, armazenamento durável ou enrollment.
+- A identidade devolvida contém a chave privada PEM em memória; a persistência segura deve ser implementada antes do uso real.
+- A validação de assinatura não é uma política completa de autorização.
+- O replay guard é local ao processo.
+- O registry é volátil e não deve ser usado em produção.
+- O parser não altera DNS nem habilita nomes em navegadores comuns.
+- Não há integração Cloudflare executável nem cliente desktop/extensão.
+
+## Segurança e responsabilidade
+
+A DEVNET não hospeda nem copia os projetos. Cada desenvolvedor controla a origem, banco de dados, credenciais e réplicas. A integração Cloudflare deve usar conectividade de saída, segredos fora do código e destinos explicitamente autorizados. Não usar em produção antes de implementar os controlos pendentes e obter revisão independente.
