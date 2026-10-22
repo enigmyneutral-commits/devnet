@@ -1,54 +1,50 @@
 # DEEVO DEVNET
 
-> Uma rede para desenvolvimento de software, inteligência artificial e engenharia de sistemas.
+Rede sobreposta dedicada ao desenvolvimento de software, APIs e ambientes de teste. A DEVNET fornece endereçamento lógico, descoberta de serviços e planeamento de failover; não hospeda nem copia os projetos dos utilizadores.
 
-A DEEVO DEVNET é um projeto experimental para explorar uma rede sobreposta dedicada a desenvolvedores, com endereçamento de serviços, descoberta distribuída, identidade criptográfica e integração com ferramentas de engenharia.
+## Princípio de funcionamento
 
-## Visão
-
-Construir um ecossistema no qual pessoas e agentes de IA possam descobrir e utilizar serviços de desenvolvimento por meio de uma rede especializada, mantendo interoperabilidade com a web convencional.
+- Cada desenvolvedor mantém o código, a aplicação, o banco de dados e as credenciais sob seu controlo.
+- Cada nó associa uma identidade DEVNET a uma configuração de conectividade, podendo usar Cloudflare Tunnel para ligar um serviço local sem abrir portas de entrada.
+- O resolver DEVNET associa nomes internos a serviços registados e autorizados.
+- O mecanismo de failover só pode escolher endpoints alternativos que o proprietário registou como réplicas compatíveis.
+- A rede não presume que uma aplicação num computador desligado continue disponível: isso exige uma réplica real e uma estratégia de consistência de dados.
 
 ## Endereços conceituais
 
-Os endereços abaixo são exemplos de design e ainda não funcionam como protocolo:
+- `devnet://api.projeto`
+- `devnet://preview.projeto`
+- `devnet://docs.projeto`
 
-- `devnet://home` — portal inicial
-- `devnet://repositories` — repositórios
-- `devnet://documentation` — documentação técnica
-- `devnet://ai-agents` — agentes de IA
-- `devnet://environments` — ambientes de desenvolvimento
-- `devnet://marketplace` — catálogo de ferramentas e serviços
+Os endereços são interpretados pelo núcleo experimental. Ainda não são resolvidos por navegadores sem cliente nem alteram o DNS público.
 
-## Princípios de engenharia
+## Estado do projeto
 
-- Segurança por padrão e modelo de ameaças documentado.
-- Identidade criptográfica e autenticação explícita.
-- Descoberta de serviços resiliente, sem ponto central obrigatório.
-- APIs e protocolos documentados e versionados.
-- Testes automatizados, análise de dependências e auditoria.
-- Privacidade por projeto, sem promessas de anonimato absoluto.
-- Interoperabilidade com padrões abertos sempre que possível.
+**MVP do núcleo em desenvolvimento.** A branch `feat/devnet-core-mvp` contém:
+- parser de endereços;
+- registo em memória de nós e serviços;
+- monitor de heartbeats;
+- planeador de failover por grupo de réplicas;
+- testes automatizados com o módulo nativo `node:test`.
 
-## Arquitetura proposta
+## Executar os testes
 
-1. **DEVNET Core:** identidade, transporte e protocolo de mensagens.
-2. **Service Discovery:** mecanismo de descoberta e resolução de serviços.
-3. **Developer Services:** repositórios, documentação, agentes e ambientes.
-4. **DEEVO Browser:** cliente de navegação com suporte aos endereços DEVNET e à web convencional.
-5. **Governance & Security:** políticas de participação, atualização, resposta a incidentes e confiança.
+Requer Node.js 20 ou superior:
 
-A rede começará como um protótipo de rede sobreposta usando a infraestrutura existente. Isso não representa uma nova infraestrutura física global nem substitui a internet subjacente.
+~~~bash
+npm test
+npm run check
+~~~
 
-## Estado atual
+## Limites atuais
 
-**Fase:** inicialização e especificação.  
-**Implementação de protocolo:** ainda não iniciada.  
-**Próximo marco:** registrar requisitos, modelo de ameaças e arquitetura do MVP antes de escolher definitivamente as dependências.
+O registo é em memória, não há API pública, autenticação de nós, protocolo de descoberta distribuída, integração executável com Cloudflare, extensão de navegador nem cliente do sistema operativo. Não usar em produção até implementar autenticação, armazenamento durável, controlo de acesso, testes de integração e revisão de segurança.
 
-## Desenvolvimento
+## Documentação
 
-As decisões técnicas, os requisitos e o roadmap serão documentados em `docs/`. Não publique credenciais, chaves privadas, tokens ou dados pessoais neste repositório.
+- [Arquitetura](docs/ARCHITECTURE.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Modelo de ameaças](docs/THREAT-MODEL.md)
+- [Implementação do MVP](docs/MVP-IMPLEMENTATION.md)
 
-## Licença
-
-A licença do projeto ainda será definida. Até essa decisão, não presuma que o código esteja licenciado para redistribuição.
+Não publicar tokens, credenciais de túneis, chaves privadas ou dados pessoais no repositório.
